@@ -1,0 +1,46 @@
+name: Build ORZON MARKET APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ORZON_MARKET_Android_Project.zip'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Extract Android project
+        run: |
+          unzip -q ORZON_MARKET_Android_Project.zip -d extracted
+          PROJECT_FILE=$(find extracted -name settings.gradle -type f | head -n 1)
+          PROJECT_DIR=$(dirname "$PROJECT_FILE")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+
+      - name: Build APK
+        run: gradle -p "$PROJECT_DIR" assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ORZON-MARKET-APK
+          path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
